@@ -17,19 +17,18 @@ stop_img=0
 cou=[]
 split_size=5
 frame_size = 256
+ratio = 256//480
 buff = np.empty((0,split_size,2))
 def dist(prev,curr):
     return ((prev[0]-curr[0])**2+(prev[1]-curr[1])**2)/2
 
-class Buffer:
-    def __init__(self):
-        pass
 for i in range(10000):
     # Take each frame
     flag=0
     _, frame = cap.read()
-    frame = utils.resize(frame,frame_size)
-    print(frame.shape)
+    #print(frame.shape)
+    #frame = utils.resize(frame,frame_size)
+    #print(frame.shape)
     frame = utils.g_blur(frame,5,2)
     mask = utils.detect_ball(frame)
 
@@ -77,7 +76,7 @@ for i in range(10000):
     if k == 27:
         break
     if flag and len(main_list)>split_size :
-        print(len(main_list))
+        #print(len(main_list))
         a = input("save ?: ")
         if a=="y":
             sublist = utils.list_split(main_list,split_size)
@@ -89,4 +88,5 @@ for i in range(10000):
             l = len(os.listdir("./dataset_arrays/"))+1
             np.save("./dataset_arrays/array_"+str(l),buff)
             print("saved")
+            buff = np.empty((0,split_size,2))
 cv.destroyAllWindows()

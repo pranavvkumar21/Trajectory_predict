@@ -1,12 +1,27 @@
 #!/usr/bin/env python3
 import cv2 as cv
 import numpy as np
+import os
 
-
-
+folder = "./dataset_arrays/"
 kernel = np.ones((3,3),np.uint8)
 dilate_kernel = np.ones((20,20),np.uint8)
 
+def load_data():
+    os.chdir(folder)
+    arrs = os.listdir()
+    X = np.empty((0,4,2))
+    Y = np.empty((0,1,2))
+    for i in arrs:
+        train = np.load(i)
+        x = train[:,:-1,:]
+        y = train[:,-1,:].reshape((-1,1,2))
+        X = np.concatenate([X,x])
+        Y = np.concatenate([Y,y])
+    print(X.shape)
+    print(Y.shape)
+    os.chdir("..")
+    return X,Y
 
 def resize(frame,size):
     max_shape = min(frame.shape[0],frame.shape[1])//2
