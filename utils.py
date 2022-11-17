@@ -58,3 +58,15 @@ def list_split(cou,length):
             sub = cou[i:i+length]
             sublist.append(sub)
         return sublist
+def get_tracker(t_name="kcf"):
+    trackers = {
+    "boosting":cv.legacy.TrackerBoosting_create,
+    "mil":cv.TrackerMIL_create,
+    "kcf":cv.TrackerKCF_create,
+    "tld":cv.legacy.TrackerTLD_create,
+    "medianflow":cv.legacy.TrackerMedianFlow_create,
+    "goturn":cv.TrackerGOTURN_create,
+    "mosse":cv.legacy.TrackerMOSSE_create,
+    "csrt":cv.TrackerCSRT_create,
+    }
+    return trackers[t_name]()
