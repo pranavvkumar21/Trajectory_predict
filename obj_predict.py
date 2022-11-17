@@ -4,7 +4,10 @@ import numpy as np
 import utils
 import os
 from kalman_predict import *
+
 cap = cv.VideoCapture("test.mp4")
+fourcc = cv.VideoWriter_fourcc('X','V','I','D')
+out = cv.VideoWriter('output.avi', fourcc, 20.0, (432, 768))
 size= 480
 kernel = np.ones((3,3),np.uint8)
 dilate_kernel = np.ones((20,20),np.uint8)
@@ -15,18 +18,16 @@ dt = 1/fps
 state_size = 4   #cx,cy,vx,vy
 measurement_size = 2  #cx,cy
 control_size = 2
-noise = 3
+noise = 1
 
 sigmaM = 1e-4
 sigmaZ = 3*noise
 
 flag=0
-vx = [-500,-500]
-pos = np.empty((0,2))
-
-mu = np.array([30.0,30.0,0.0,0.0]).reshape((state_size,1))
-P = np.diag([1000.0,1000.0,1000.0,1000.0])**2
-acc = np.array([0.0,900.0]).reshape((control_size,1))
+x_ = []
+mu = np.array([0.0,0.0,0.0,0.0]).reshape((state_size,1))
+cov = np.diag([1000.0,10000.0,10000.0,1000.0])**4
+acc = np.array([0.0,3500.0]).reshape((control_size,1))
 
 def color_track(frame):
     img = frame.copy()
@@ -56,6 +57,9 @@ def object_track(img,tracker):
 while cap.isOpened():
 
     _, frame = cap.read()
+    if type(frame) ==type(None):
+        print("end")
+        break
     width = int(frame.shape[1] * scale / 100)
     height = int(frame.shape[0] * scale / 100)
     dim = (width, height)
@@ -63,20 +67,24 @@ while cap.isOpened():
     if True:
         dt = 1/240
         img,bbox_c,c = color_track(frame)
-        kalman.predict(acc,1)
-        mu,sig = kalman.correct(np.array([c[0],c[1]]).reshape((2,1)))
-        for i in range(100):
-            mu,sig,zp = kalman.predict(acc,)
-            #print(str(int(mu[0]))+"\t"+str(int(mu[1])))
-            #print(img.shape)
-            cv.circle(img,(int(mu[0]),int(mu[1])),10,(0,255,0),5)
-
+        z = np.array([c[0],c[1]]).reshape((2,1))
+        mu,cov,z_p = kalman.predict(acc,mu,cov)
+        mu,cov = kalman.correct(z,mu,cov,z_p)
+        x_.append(mu)
+        mu2 = mu.copy()
+        cov2 = cov.copy()
+        for i in range(150):
+            mu2,cov2,zp = kalman.predict(acc,mu2,cov2)
+            if i%3==0:
+                rad = int((2*np.sqrt(cov2[0,0])+2*np.sqrt(cov2[1,1]))//2)
+                cv.circle(img,(int(mu2[0]),int(mu2[1])),rad,(0,0,255),2)
+        for x in range(len(x_)-1):
+            cv.line(img,(int(x_[x][0]),int(x_[x][1])),(int(x_[x+1][0]),int(x_[x+1][1])),(255,0,255),1)
     if flag:
         img = object_track(img,tracker)
 
-
     cv.imshow('frame',img)
-
+    out.write(img)
 
     k = cv.waitKey(5) & 0xFF
     if k == 27:
@@ -87,4 +95,11 @@ while cap.isOpened():
         flag = tracker.init(img,bbox_c)
         flag=True
         ok = True
+    if k==ord("b"):
+        mu = np.array([0.0,0.0,0.0,0.0]).reshape((state_size,1))
+        cov = np.diag([1000.0,1000.0,10000.0,1000.0])**4
+        x_ = []
+
+cap.release()
+out.release()
 cv.destroyAllWindows()

@@ -10,12 +10,12 @@ measurement_size = 2  #cx,cy
 control_size = 2
 noise = 3
 
-sigmaM = 1e-4
-sigmaZ = 3*noise
+sigmaM = 0.3
+sigmaZ = 0.3*noise
 
 
 class KalmanFilter:
-    def __init__(self,F,H,B,Q,R,mu,P):
+    def __init__(self,F,H,B,Q,R):
         #state, measurement and control matrices
         self.F = F
         self.H = H
@@ -24,30 +24,24 @@ class KalmanFilter:
         self.Q = Q
         self.R = R
         #Initial mean and covariance
-        self.mu = mu
-        self.cov = P
-    def predict(self,u,save_flg=0):
-        mu = np.matmul(self.F,self.mu) + np.matmul(self.B,u)
-        cov = np.matmul(np.matmul(self.F,self.cov),self.F.T)+self.Q
-        z_p = np.matmul(self.H,self.mu)
-        if save_flg:
-            self.mu = mu
-            self.cov = cov
-            self.z_p = z_p
+
+    def predict(self,u,mu,cov):
+        mu = np.matmul(self.F,mu) + np.matmul(self.B,u)
+        cov = np.matmul(np.matmul(self.F,cov),self.F.T)+self.Q
+        z_p = np.matmul(self.H,mu)
         return mu,cov,z_p
-    def correct(self,z):
-        eps = z-self.z_p
-        print(eps.shape)
-        K = np.matmul(np.matmul(self.cov,self.H.T),la.inv(np.matmul(np.matmul(self.H,self.cov),self.H.T)+self.R))
-        self.mu += np.matmul(K,eps)
-        self.cov = np.matmul((np.eye(len(self.cov))-np.matmul(K,self.H)),self.cov)
-        return self.mu,self.cov
+    def correct(self,z,mu,cov,z_p):
+        eps = z-z_p
+        K = np.matmul(np.matmul(cov,self.H.T),la.inv(np.matmul(np.matmul(self.H,cov),self.H.T)+self.R))
+        mu += np.matmul(K,eps)
+        cov = np.matmul((np.eye(len(cov))-np.matmul(K,self.H)),cov)
+        return mu,cov
 
 
 
 
-mu = np.array([30.0,30.0,0.0,0.0]).reshape((state_size,1))
-P = np.diag([1000.0,1000.0,1000.0,1000.0])**2
+mu = np.array([0.0,0.0,0.0,0.0]).reshape((state_size,1))
+cov = np.diag([1000.0,1000.0,1000.0,1000.0])**2
 acc = np.array([0.0,900.0]).reshape((control_size,1))
 
 #kalman = KalmanFilter(state_size,measurement_size,control_size)
@@ -72,7 +66,7 @@ dt, 0,
 
 M_noise = sigmaM**2 * np.eye(4)         #Q Matrix
 Z_noise = sigmaZ**2 * np.eye(2)     #R matrix
-kalman = KalmanFilter(transitionMatrix,measurementMatrix,controlMatrix,M_noise,Z_noise,mu,P)
+kalman = KalmanFilter(transitionMatrix,measurementMatrix,controlMatrix,M_noise,Z_noise)
 
 #for i in range(3):
 #prediction = kalman.predict(a)
