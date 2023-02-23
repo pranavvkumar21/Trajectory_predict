@@ -4,8 +4,8 @@ import numpy as np
 import utils
 import os
 from kalman_predict import *
-
-cap = cv.VideoCapture("test.mp4")
+cap_file = "test.mp4"
+cap = cv.VideoCapture(cap_file)
 fourcc = cv.VideoWriter_fourcc('X','V','I','D')
 out = cv.VideoWriter('output.avi', fourcc, 20.0, (432, 768))
 size= 480
@@ -64,6 +64,7 @@ while cap.isOpened():
     height = int(frame.shape[0] * scale / 100)
     dim = (width, height)
     frame = cv.resize(frame, dim, interpolation = cv.INTER_AREA)
+
     if True:
         dt = 1/240
         img,bbox_c,c = color_track(frame)
